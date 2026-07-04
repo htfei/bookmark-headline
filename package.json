@@ -1,0 +1,25 @@
+{
+  "name": "bookmark-headline",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "书签头条 - 你收藏的网站，有更新时提醒你",
+  "scripts": {
+    "dev": "wxt -b edge",
+    "build": "wxt build",
+    "zip": "wxt zip"
+  },
+  "dependencies": {
+    "linkedom": "^0.18.12",
+    "lucide-vue-next": "^0.400.0",
+    "vue": "^3.4.0"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.268",
+    "@vitejs/plugin-vue": "^6.0.7",
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.4.0",
+    "wxt": "^0.19.0"
+  }
+}
