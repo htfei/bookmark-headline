@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>书签头条 - 让静态书签活起来</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #FF6B35;
+            --primary-dark: #E55A2B;
+            --secondary: #4A90E2;
+            --accent: #7B68EE;
+            --bg-dark: #0F0F23;
+            --bg-card: #1A1A2E;
+            --bg-gradient: linear-gradient(135deg, #0F0F23 0%, #1A1A2E 50%, #16213E 100%);
+            --text-primary: #FFFFFF;
+            --text-secondary: #B8B8D1;
+            --text-muted: #6C6C8A;
+            --border: rgba(255, 255, 255, 0.1);
+            --glow: rgba(255, 107, 53, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* 背景装饰 */
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.4;
+            background-image:
+                radial-gradient(circle at 20% 30%, rgba(255, 107, 53, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(123, 104, 238, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(74, 144, 226, 0.1) 0%, transparent 50%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Hero区域 */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 80px 0;
+            position: relative;
+        }
+
+        .hero-content {
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 24px;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 20px rgba(255, 107, 53, 0.3);
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(48px, 8vw, 96px);
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, #FFFFFF 0%, #FF6B35 50%, #7B68EE 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 5s ease infinite;
+            background-size: 200% 200%;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(18px, 3vw, 24px);
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 40px;
+            font-weight: 300;
+        }
+
+        .hero-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--primary);
+            color: white;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 30px rgba(255, 107, 53, 0.4);
+        }
+
+        .hero-cta:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(255, 107, 53, 0.5);
+        }
+
+        /* 滚动指示器 */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 2s infinite;
+        }
+
+        .scroll-indicator svg {
+            width: 32px;
+            height: 32px;
+            color: var(--text-muted);
+        }
+
+        /* 痛点区域 */
+        .pain-point {
+            padding: 120px 0;
+            background: linear-gradient(180deg, transparent 0%, rgba(255, 107, 53, 0.03) 50%, transparent 100%);
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .section-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--primary);
+            margin-bottom: 16px;
+            font-weight: 500;
+        }
+
+        h2 {
+            font-size: clamp(32px, 5vw, 48px);
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .section-desc {
+            font-size: 18px;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .pain-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-top: 40px;
+        }
+
+        .pain-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pain-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .pain-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .pain-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .pain-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, rgba(255, 107, 53, 0.2), rgba(123, 104, 238, 0.2));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+
+        .pain-card h3 {
+            font-size: 20px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .pain-card p {
+            color: var(--text-secondary);
+            font-size: 15px;
+            line-height: 1.7;
+        }
+
+        /* 解决方案区域 */
+        .solution {
+            padding: 120px 0;
+        }
+
+        .solution-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+            margin-top: 60px;
+        }
+
+        .solution-visual {
+            position: relative;
+        }
+
+        .browser-mockup {
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            box-shadow: 0 20px 80px rgba(0, 0, 0, 0.4);
+        }
+
+        .browser-header {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .browser-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .browser-dot.red { background: #FF5F57; }
+        .browser-dot.yellow { background: #FFBD2E; }
+        .browser-dot.green { background: #28CA41; }
+
+        .browser-content {
+            padding: 24px;
+            min-height: 400px;
+        }
+
+        .new-tab-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        .bookmark-tile {
+            aspect-ratio: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 16px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .bookmark-tile:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.05);
+        }
+
+        .bookmark-tile.has-update::after {
+            content: '3';
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--primary);
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            font-size: 11px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bookmark-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .bookmark-name {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+        }
+
+        .solution-content h3 {
+            font-size: 28px;
+            margin-bottom: 24px;
+            font-weight: 700;
+        }
+
+        .solution-content p {
+            color: var(--text-secondary);
+            font-size: 16px;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin-top: 32px;
+        }
+
+        .feature-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .feature-list li:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 107, 53, 0.3);
+        }
+
+        .feature-number {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .feature-text h4 {
+            font-size: 16px;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .feature-text p {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        /* 功能展示 */
+        .features {
+            padding: 120px 0;
+            background: linear-gradient(180deg, transparent 0%, rgba(123, 104, 238, 0.03) 50%, transparent 100%);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+            margin-top: 60px;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 40px 32px;
+            text-align: center;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 107, 53, 0.1) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-12px);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 107, 53, 0.3);
+        }
+
+        .feature-icon-large {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            background: linear-gradient(135deg, rgba(255, 107, 53, 0.15), rgba(123, 104, 238, 0.15));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .feature-card h3 {
+            font-size: 22px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            position: relative;
+            z-index: 1;
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 15px;
+            line-height: 1.7;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 用户场景 */
+        .scenarios {
+            padding: 120px 0;
+        }
+
+        .scenario-timeline {
+            margin-top: 60px;
+            position: relative;
+        }
+
+        .scenario-timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, var(--primary), var(--accent));
+            transform: translateX(-50%);
+        }
+
+        .scenario-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+
+        .scenario-item:nth-child(odd) {
+            flex-direction: row-reverse;
+        }
+
+        .scenario-content {
+            width: calc(50% - 60px);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            transition: all 0.3s ease;
+        }
+
+        .scenario-content:hover {
+            border-color: rgba(255, 107, 53, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .scenario-time {
+            width: 120px;
+            text-align: center;
+            font-size: 14px;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .scenario-dot {
+            width: 16px;
+            height: 16px;
+            background: var(--primary);
+            border-radius: 50%;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 0 20px var(--glow);
+        }
+
+        .scenario-content h4 {
+            font-size: 18px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .scenario-content p {
+            color: var(--text-secondary);
+            font-size: 15px;
+            line-height: 1.7;
+        }
+
+        /* 价值主张 */
+        .value {
+            padding: 120px 0;
+            background: linear-gradient(180deg, transparent 0%, rgba(255, 107, 53, 0.03) 50%, transparent 100%);
+        }
+
+        .value-cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 32px;
+            margin-top: 60px;
+        }
+
+        .value-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 48px 40px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .value-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
+        }
+
+        .value-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+        }
+
+        .value-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, rgba(255, 107, 53, 0.15), rgba(123, 104, 238, 0.15));
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 24px;
+        }
+
+        .value-card h3 {
+            font-size: 24px;
+            margin-bottom: 16px;
+            font-weight: 700;
+        }
+
+        .value-card p {
+            color: var(--text-secondary);
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        .value-list {
+            margin-top: 20px;
+            padding-left: 0;
+            list-style: none;
+        }
+
+        .value-list li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+        }
+
+        .value-list li::before {
+            content: '✓';
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        /* 技术架构 */
+        .tech {
+            padding: 120px 0;
+        }
+
+        .tech-diagram {
+            margin-top: 60px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 60px;
+        }
+
+        .tech-flow {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tech-node {
+            flex: 1;
+            min-width: 200px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .tech-node:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 107, 53, 0.3);
+        }
+
+        .tech-node-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 16px;
+            background: linear-gradient(135deg, rgba(255, 107, 53, 0.2), rgba(123, 104, 238, 0.2));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .tech-node h4 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .tech-node p {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .tech-arrow {
+            color: var(--primary);
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        /* CTA区域 */
+        .cta {
+            padding: 120px 0;
+            text-align: center;
+            background: linear-gradient(180deg, transparent 0%, rgba(123, 104, 238, 0.05) 100%);
+        }
+
+        .cta h2 {
+            font-size: clamp(32px, 5vw, 48px);
+            margin-bottom: 24px;
+        }
+
+        .cta p {
+            font-size: 18px;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 40px;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 8px 30px rgba(255, 107, 53, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(255, 107, 53, 0.5);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 107, 53, 0.3);
+        }
+
+        /* Footer */
+        footer {
+            padding: 40px 0;
+            border-top: 1px solid var(--border);
+            text-align: center;
+        }
+
+        footer p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* 动画 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+            40% { transform: translateX(-50%) translateY(-10px); }
+            60% { transform: translateX(-50%) translateY(-5px); }
+        }
+
+        /* 响应式 */
+        @media (max-width: 968px) {
+            .solution-grid {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .value-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .scenario-item,
+            .scenario-item:nth-child(odd) {
+                flex-direction: column;
+            }
+
+            .scenario-timeline::before {
+                left: 20px;
+            }
+
+            .scenario-content {
+                width: calc(100% - 60px);
+                margin-left: 60px;
+            }
+
+            .scenario-dot {
+                left: 20px;
+            }
+
+            .scenario-time {
+                position: absolute;
+                left: 50px;
+                top: 0;
+                width: auto;
+            }
+
+            .tech-flow {
+                flex-direction: column;
+            }
+
+            .tech-arrow {
+                transform: rotate(90deg);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .new-tab-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .browser-content {
+                padding: 16px;
+            }
+
+            .tech-diagram {
+                padding: 32px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-pattern"></div>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <span class="badge">TRAE AI 创造力大赛参赛作品</span>
+                <h1>书签头条</h1>
+                <p class="hero-subtitle">
+                    让静态的书签栏活起来，将收藏的网站转变为动态信息看板
+                </p>
+                <a href="#solution" class="hero-cta">
+                    <span>探索创意方案</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M7 17L17 7M17 7H7M17 7V17"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+        <div class="scroll-indicator">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M19 12l-7 7-7-7"/>
+            </svg>
+        </div>
+    </section>
+
+    <!-- Pain Points Section -->
+    <section class="pain-point">
+        <div class="container">
+            <div class="section-header">
+                <p class="section-label">痛点发现</p>
+                <h2>收藏即埋葬？</h2>
+                <p class="section-desc">
+                    90%的书签在收藏后就再也没被打开过，书签从有价值的信息入口变成了数字坟墓
+                </p>
+            </div>
+            <div class="pain-cards">
+                <div class="pain-card">
+                    <div class="pain-icon">📚</div>
+                    <h3>收藏后遗忘</h3>
+                    <p>精心收藏的网站，收藏后却很少再看，大量有价值的信息被遗忘在角落</p>
+                </div>
+                <div class="pain-card">
+                    <div class="pain-icon">🏝️</div>
+                    <h3>信息孤岛</h3>
+                    <p>每个网站需要单独访问才能获取更新，效率低下，错过重要信息</p>
+                </div>
+                <div class="pain-card">
+                    <div class="pain-icon">🔔</div>
+                    <h3>错过更新</h3>
+                    <p>没有订阅机制，无法知道收藏的网站是否有新内容发布</p>
+                </div>
+                <div class="pain-card">
+                    <div class="pain-icon">🗂️</div>
+                    <h3>管理混乱</h3>
+                    <p>书签越来越多，分类和查找成本越来越高，最终放弃管理</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Solution Section -->
+    <section class="solution" id="solution">
+        <div class="container">
+            <div class="section-header">
+                <p class="section-label">解决方案</p>
+                <h2>书签头条：让静态书签活起来</h2>
+                <p class="section-desc">
+                    将用户现有的静态书签栏，转变成动态的信息看板
+                </p>
+            </div>
+            <div class="solution-grid">
+                <div class="solution-visual">
+                    <div class="browser-mockup">
+                        <div class="browser-header">
+                            <div class="browser-dot red"></div>
+                            <div class="browser-dot yellow"></div>
+                            <div class="browser-dot green"></div>
+                        </div>
+                        <div class="browser-content">
+                            <div class="new-tab-grid">
+                                <div class="bookmark-tile has-update">
+                                    <div class="bookmark-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">📰</div>
+                                    <span class="bookmark-name">科技媒体</span>
+                                </div>
+                                <div class="bookmark-tile">
+                                    <div class="bookmark-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c);">🎨</div>
+                                    <span class="bookmark-name">设计灵感</span>
+                                </div>
+                                <div class="bookmark-tile has-update">
+                                    <div class="bookmark-icon" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">💻</div>
+                                    <span class="bookmark-name">开发博客</span>
+                                </div>
+                                <div class="bookmark-tile">
+                                    <div class="bookmark-icon" style="background: linear-gradient(135deg, #43e97b, #38f9d7);">📈</div>
+                                    <span class="bookmark-name">产品观察</span>
+                                </div>
+                                <div class="bookmark-tile">
+                                    <div class="bookmark-icon" style="background: linear-gradient(135deg, #fa709a, #fee140);">🎵</div>
+                                    <span class="bookmark-name">音乐发现</span>
+                                </div>
+                                <div class="bookmark-tile has-update">
+                                    <div class="bookmark-icon" style="background: linear-gradient(135deg, #a8edea, #fed6e3);">📖</div>
+                                    <span class="bookmark-name">阅读专栏</span>
+                                </div>
+                                <div class="bookmark-tile">
+                                    <div class="bookmark-icon" style="background: linear-gradient(135deg, #ff9a9e, #fecfef);">🎬</div>
+                                    <span class="bookmark-name">视频平台</span>
+                                </div>
+                                <div class="bookmark-tile">
+                                    <div class="bookmark-icon" style="background: linear-gradient(135deg, #a1c4fd, #c2e9fb);">🛠️</div>
+                                    <span class="bookmark-name">工具收藏</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="solution-content">
+                    <h3>核心功能设计</h3>
+                    <p>
+                        书签头条是一款浏览器插件，它接管新标签页，将原本静态的书签图标转变为动态的信息卡片。
+                        当用户悬停或点击书签图标时，自动展示该网站的最新内容更新。
+                    </p>
+                    <ul class="feature-list">
+                        <li>
+                            <span class="feature-number">1</span>
+                            <div class="feature-text">
+                                <h4>智能提取</h4>
+                                <p>自动读取书签栏，智能发现RSS/Atom Feed，无需手动配置</p>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="feature-number">2</span>
+                            <div class="feature-text">
+                                <h4>动态看板</h4>
+                                <p>新标签页展示书签网格，未读更新显示红点徽章提醒</p>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="feature-number">3</span>
+                            <div class="feature-text">
+                                <h4>本地缓存</h4>
+                                <p>数据全在前端缓存，零服务器成本，隐私安全有保障</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features">
+        <div class="container">
+            <div class="section-header">
+                <p class="section-label">产品特性</p>
+                <h2>三大核心能力</h2>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon-large">⚡</div>
+                    <h3>零配置启动</h3>
+                    <p>安装即用，自动读取浏览器现有书签，无需手动添加任何订阅源，真正实现开箱即用</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon-large">🎯</div>
+                    <h3>智能推荐</h3>
+                    <p>基于用户访问频率和添加时间，智能筛选Top网站，优先展示最相关的内容更新</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon-large">🔒</div>
+                    <h3>隐私优先</h3>
+                    <p>所有数据本地存储，不上传任何用户信息，完全离线可用，保护用户隐私安全</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- User Scenarios Section -->
+    <section class="scenarios">
+        <div class="container">
+            <div class="section-header">
+                <p class="section-label">使用场景</p>
+                <h2>一天中的书签头条</h2>
+            </div>
+            <div class="scenario-timeline">
+                <div class="scenario-item">
+                    <div class="scenario-content">
+                        <h4>🌅 早晨开启</h4>
+                        <p>打开浏览器，新标签页一眼看到收藏的技术博客、新闻媒体的最新更新，红点提醒有3条重要内容</p>
+                    </div>
+                    <div class="scenario-time">08:30</div>
+                    <div class="scenario-dot"></div>
+                </div>
+                <div class="scenario-item">
+                    <div class="scenario-content">
+                        <h4>☕ 工作间隙</h4>
+                        <p>休息时快速浏览设计灵感网站和产品观察专栏的最新动态，发现一篇有价值的文章并深入阅读</p>
+                    </div>
+                    <div class="scenario-time">10:15</div>
+                    <div class="scenario-dot"></div>
+                </div>
+                <div class="scenario-item">
+                    <div class="scenario-content">
+                        <h4>🌙 晚间回顾</h4>
+                        <p>下班前打开书签头条，快速扫视今天所有收藏网站的更新，标记感兴趣的内容稍后阅读</p>
+                    </div>
+                    <div class="scenario-time">18:00</div>
+                    <div class="scenario-dot"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Value Section -->
+    <section class="value">
+        <div class="container">
+            <div class="section-header">
+                <p class="section-label">价值主张</p>
+                <h2>为什么选择书签头条？</h2>
+            </div>
+            <div class="value-cards">
+                <div class="value-card">
+                    <div class="value-icon">📈</div>
+                    <h3>效率提升</h3>
+                    <p>将"主动搜索"转变为"被动接收"，用户无需逐个访问网站即可获取更新</p>
+                    <ul class="value-list">
+                        <li>新标签页即信息看板，零操作成本</li>
+                        <li>智能提取RSS Feed，无需手动配置</li>
+                        <li>未读提醒机制，不错过重要更新</li>
+                    </ul>
+                </div>
+                <div class="value-card">
+                    <div class="value-icon">💰</div>
+                    <h3>商业价值</h3>
+                    <p>浏览器插件天然具备高频使用场景，每次打开新标签页都是一次触达机会</p>
+                    <ul class="value-list">
+                        <li>可扩展为内容推荐引擎</li>
+                        <li>用户行为数据反哺内容生态</li>
+                        <li>精准广告或付费订阅变现路径</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tech Section -->
+    <section class="tech">
+        <div class="container">
+            <div class="section-header">
+                <p class="section-label">技术架构</p>
+                <h2>轻量级实现方案</h2>
+                <p class="section-desc">
+                    基于浏览器扩展API，零服务器成本，数据本地存储
+                </p>
+            </div>
+            <div class="tech-diagram">
+                <div class="tech-flow">
+                    <div class="tech-node">
+                        <div class="tech-node-icon">📚</div>
+                        <h4>书签读取</h4>
+                        <p>Chrome Bookmarks API</p>
+                    </div>
+                    <div class="tech-arrow">→</div>
+                    <div class="tech-node">
+                        <div class="tech-node-icon">🔍</div>
+                        <h4>Feed发现</h4>
+                        <p>自动检测RSS/Atom</p>
+                    </div>
+                    <div class="tech-arrow">→</div>
+                    <div class="tech-node">
+                        <div class="tech-node-icon">💾</div>
+                        <h4>本地缓存</h4>
+                        <p>chrome.storage</p>
+                    </div>
+                    <div class="tech-arrow">→</div>
+                    <div class="tech-node">
+                        <div class="tech-node-icon">🎨</div>
+                        <h4>新标签页</h4>
+                        <p>动态渲染展示</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <h2>让书签重获新生</h2>
+            <p>
+                书签头条，将你收藏的每一个网站都变成一个动态的信息源，让有价值的内容主动找到你
+            </p>
+            <div class="cta-buttons">
+                <a href="#" class="btn btn-primary">
+                    <span>立即体验</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </a>
+                <a href="#" class="btn btn-secondary">
+                    <span>查看源码</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>书签头条 - TRAE AI 创造力大赛参赛作品 | 生活娱乐赛道</p>
+        </div>
+    </footer>
+
+    <script>
+        // 平滑滚动
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // 滚动动画
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.pain-card, .feature-card, .value-card, .scenario-item, .tech-node').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(30px)';
+            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(el);
+        });
+
+        // 书签卡片交互
+        document.querySelectorAll('.bookmark-tile').forEach(tile => {
+            tile.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.05)';
+            });
+            tile.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+</body>
+</html>
