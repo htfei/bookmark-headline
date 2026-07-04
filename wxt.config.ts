@@ -16,7 +16,16 @@ export default defineConfig({
     version: '1.0.0',
     permissions: ['bookmarks', 'storage', 'alarms', 'activeTab', 'tabs', 'webRequest', 'webRequestAuthProvider'],
     host_permissions: ['<all_urls>'],
-    action: { default_title: '书签头条' }
+    action: { 
+      default_title: '书签头条',
+      default_icon: 'logo.png'
+    },
+    icons: {
+      16: 'logo.png',
+      32: 'logo.png',
+      48: 'logo.png',
+      128: 'logo.png',
+    }
   },
   webExt: {
     startUrls: ["https://bing.com/"],
